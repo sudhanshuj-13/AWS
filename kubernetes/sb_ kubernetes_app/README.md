@@ -1,12 +1,12 @@
 # Setting of EKS cluster
 
 ## Creating Role
-* EKSClusterRole *
+*EKSClusterRole*
    To enable control plane to talk to different aws services 
 Service: EKS Cluster
 Policy: AmazonEKSClusterPolicy,AmazonEKSVPCResourceController
 
-* NodeGroupRole * 
+*NodeGroupRole* 
    For worker nodes the data plane so that they can talk to control plane,pull ECR images etc
 Service: EC2
 AmazonEKSWorkerNodePolicy,AmazonEC2ContainerRegistryReadOnly,AmazonEKS_CNI_Policy,AmazonSSMManagedInstanceCore 
