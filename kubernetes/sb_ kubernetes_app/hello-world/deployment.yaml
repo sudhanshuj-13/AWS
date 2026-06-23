@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: hello-world
-          image: hello-world:1.0-SNAPSHOT
+          image: intro050626/aws:v1
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
