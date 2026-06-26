@@ -1,0 +1,59 @@
+name: Deploy hello-world to EKS
+
+on:
+  workflow_run:
+    workflows: ["Build and Push hello-world Docker Image"]
+    types:
+      - completed
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Docker image tag to deploy'
+        required: false
+        default: 'dev-latest'
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    environment: DEV
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-north-1
+
+      - name: Update kubeconfig for EKS
+        run: |
+          aws eks update-kubeconfig \
+            --region eu-north-1 \
+            --name myFirstCluster
+
+      - name: Create namespace if needed
+        run: |
+          kubectl create namespace dev --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Deploy image to EKS
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          IMAGE_TAG: ${{ github.event.inputs.image_tag || 'dev-latest' }}
+        run: |
+          IMAGE="${DOCKER_USERNAME}/hello-world:${IMAGE_TAG}"
+          echo "Deploying image: ${IMAGE}"
+          cp kubernetes/sb_\ kubernetes_app/hello-world/deployment.yaml /tmp/hello-world-deployment.yaml
+          sed -i "s|image: .*|image: ${IMAGE}|" /tmp/hello-world-deployment.yaml
+          kubectl apply -f /tmp/hello-world-deployment.yaml -n dev
+          kubectl rollout status deployment/hello-world -n dev --timeout=300s
