@@ -14,6 +14,7 @@ permissions:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    environment: DEV
 
     steps:
       - name: Checkout repository
@@ -34,7 +35,8 @@ jobs:
         with:
           images: ${{ secrets.DOCKER_USERNAME }}/hello-world
           tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=dev-latest,enable={{is_default_branch}}
+            type=raw,value=dev-{{sha}},enable={{is_default_branch}}
             type=sha
 
       - name: Build and push Docker image
